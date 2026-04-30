@@ -1,0 +1,16 @@
+# Build intermediates (not bin — bin is intentionally included)
+obj/
+*.user
+*.suo
+.vs/
+*.DotSettings.user
+
+# Data and logs (local runtime files)
+ShoeTracker/data/
+ShoeTracker/Logs/
+ShoeTracker/settings.json
+
+# OS noise
+Thumbs.db
+Desktop.ini
+.DS_Store
