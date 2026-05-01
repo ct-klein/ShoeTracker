@@ -21,10 +21,9 @@ partial class MainForm
         SuspendLayout();
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode       = AutoScaleMode.Font;
-        BackColor           = Color.FromArgb(13, 17, 23);
-        ClientSize          = new Size(420, 720);
+        ClientSize          = new Size(525, 900);
         FormBorderStyle     = FormBorderStyle.None;
-        MinimumSize         = new Size(380, 540);
+        MinimumSize         = new Size(475, 675);
         Name                = "MainForm";
         Text                = "ShoeTracker";
         StartPosition       = FormStartPosition.CenterScreen;

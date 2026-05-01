@@ -7,7 +7,8 @@ public sealed class SettingsService
     private static readonly string SettingsPath =
         Path.Combine(AppContext.BaseDirectory, "settings.json");
 
-    public string Unit { get; set; } = "mi";
+    public string Unit      { get; set; } = "mi";
+    public string ThemeName { get; set; } = "dark";
 
     public void Load()
     {
@@ -15,8 +16,8 @@ public sealed class SettingsService
         {
             if (!File.Exists(SettingsPath)) return;
             var doc = JsonDocument.Parse(File.ReadAllText(SettingsPath));
-            if (doc.RootElement.TryGetProperty("unit", out var prop))
-                Unit = prop.GetString() ?? "mi";
+            if (doc.RootElement.TryGetProperty("unit",  out var u)) Unit      = u.GetString() ?? "mi";
+            if (doc.RootElement.TryGetProperty("theme", out var t)) ThemeName = t.GetString() ?? "dark";
         }
         catch { /* first run */ }
     }
@@ -26,7 +27,7 @@ public sealed class SettingsService
         try
         {
             File.WriteAllText(SettingsPath,
-                JsonSerializer.Serialize(new { unit = Unit }));
+                JsonSerializer.Serialize(new { unit = Unit, theme = ThemeName }));
         }
         catch { /* ignore */ }
     }

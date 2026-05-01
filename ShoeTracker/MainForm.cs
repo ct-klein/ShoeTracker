@@ -52,8 +52,10 @@ public partial class MainForm : Form
     // ─────────────────────────────────────────────────────────────────────────
     public MainForm()
     {
-        InitializeComponent();
         _settings.Load();
+        Theme.Apply(_settings.ThemeName == "light");
+        InitializeComponent();
+        BackColor = Theme.Background;
         _data.Load();
         BuildUI();
         _ticker.Tick += (_, _) => UpdateStatus();
@@ -68,7 +70,7 @@ public partial class MainForm : Form
         SuspendLayout();
 
         // Title bar
-        var titleBar = MakePanel(Color.FromArgb(8, 12, 18), DockStyle.Top, 40);
+        var titleBar = MakePanel(Theme.TitleBar, DockStyle.Top, 50);
         AttachDrag(titleBar);
 
         var lblTitle = new Label
@@ -78,9 +80,9 @@ public partial class MainForm : Form
             Font      = Theme.FontTitle,
             AutoSize  = false,
             Dock      = DockStyle.Left,
-            Width     = 180,
+            Width     = 225,
             TextAlign = ContentAlignment.MiddleLeft,
-            Padding   = new Padding(12, 0, 0, 0),
+            Padding   = new Padding(14, 0, 0, 0),
             BackColor = Color.Transparent,
         };
 
@@ -93,14 +95,14 @@ public partial class MainForm : Form
         titleBar.Controls.AddRange([btnClose, btnSettings, lblTitle]);
 
         // Nav bar
-        var pnlNav = MakePanel(Theme.Background, DockStyle.Top, 32);
+        var pnlNav = MakePanel(Theme.Background, DockStyle.Top, 40);
         string[] tabs = ["DASHBOARD", "SHOES", "LOG RUN", "HISTORY"];
         var flpNav = new FlowLayoutPanel
         {
             Dock          = DockStyle.Fill,
             FlowDirection = FlowDirection.LeftToRight,
             BackColor     = Color.Transparent,
-            Padding       = new Padding(4, 0, 0, 0),
+            Padding       = new Padding(5, 0, 0, 0),
         };
         foreach (var t in tabs)
         {
@@ -115,7 +117,7 @@ public partial class MainForm : Form
         var sep = MakePanel(Theme.Border, DockStyle.Top, 1);
 
         // Status bar
-        var statusBar = MakePanel(Color.FromArgb(8, 12, 18), DockStyle.Bottom, 22);
+        var statusBar = MakePanel(Theme.TitleBar, DockStyle.Bottom, 28);
         _lblStatus = new Label
         {
             Text      = "ShoeTracker  v1.0",
@@ -123,7 +125,7 @@ public partial class MainForm : Form
             Font      = Theme.FontSmall,
             Dock      = DockStyle.Fill,
             TextAlign = ContentAlignment.MiddleLeft,
-            Padding   = new Padding(10, 0, 0, 0),
+            Padding   = new Padding(12, 0, 0, 0),
             BackColor = Color.Transparent,
         };
         statusBar.Controls.Add(_lblStatus);
@@ -133,12 +135,12 @@ public partial class MainForm : Form
         BuildAllTabs(pnlContent);
 
         // Resize grip
-        var grip = new Panel { Size = new Size(14, 14), BackColor = Color.Transparent, Cursor = Cursors.SizeNWSE };
+        var grip = new Panel { Size = new Size(18, 18), BackColor = Color.Transparent, Cursor = Cursors.SizeNWSE };
         grip.Paint     += DrawResizeGrip;
         grip.MouseDown += ResizeGrip_MouseDown;
         pnlContent.Controls.Add(grip);
         pnlContent.Resize += (_, _) =>
-            grip.Location = new Point(pnlContent.ClientSize.Width - 14, pnlContent.ClientSize.Height - 14);
+            grip.Location = new Point(pnlContent.ClientSize.Width - 18, pnlContent.ClientSize.Height - 18);
 
         Controls.AddRange([pnlContent, statusBar, sep, pnlNav, titleBar]);
 
@@ -233,13 +235,13 @@ public partial class MainForm : Form
         foreach (var shoe in _data.Shoes.Where(s => !s.IsRetired).OrderBy(s => s.Name))
         {
             var stats = _data.GetShoeStats(shoe);
-            var card  = MakeShoeCard(shoe, stats, unit, _flpShoeCards.Width > 0 ? _flpShoeCards.Width : 404);
+            var card  = MakeShoeCard(shoe, stats, unit, _flpShoeCards.Width > 0 ? _flpShoeCards.Width : 505);
             _flpShoeCards.Controls.Add(card);
         }
 
         if (!_data.Shoes.Any(s => !s.IsRetired))
         {
-            var hint = MakeBodyLabel("No active shoes. Go to SHOES tab to add your first pair.", 404);
+            var hint = MakeBodyLabel("No active shoes. Go to SHOES tab to add your first pair.", 505);
             hint.Margin = new Padding(8, 4, 8, 0);
             _flpShoeCards.Controls.Add(hint);
         }
@@ -250,41 +252,38 @@ public partial class MainForm : Form
     private Panel MakeShoeCard(Shoe shoe, ShoeStats stats, string unit, int width)
     {
         int cardW = width - 16;
-        bool nearEnd   = stats.WornPercent >= 80;
+        bool nearEnd     = stats.WornPercent >= 80;
         bool veryNearEnd = stats.WornPercent >= 95;
 
         var card = new Panel
         {
             Width     = cardW,
-            Height    = 108,
+            Height    = 135,
             BackColor = Theme.Surface,
-            Margin    = new Padding(8, 0, 8, 6),
+            Margin    = new Padding(8, 0, 8, 8),
         };
 
-        // Shoe name
         var lblName = new Label
         {
             Text      = shoe.Name.Length > 0 ? shoe.Name : "(unnamed)",
             Font      = Theme.FontMonoBold,
             ForeColor = veryNearEnd ? Theme.Negative : nearEnd ? Theme.Warning : Theme.Accent,
-            Location  = new Point(10, 10),
-            Size      = new Size(cardW - 20, 16),
+            Location  = new Point(12, 12),
+            Size      = new Size(cardW - 24, 20),
             BackColor = Color.Transparent,
         };
 
-        // Brand / Model
         string sub = (shoe.Brand + (shoe.Model.Length > 0 ? $"  {shoe.Model}" : "")).Trim();
         var lblSub = new Label
         {
             Text      = sub.Length > 0 ? sub : " ",
             Font      = Theme.FontSmall,
             ForeColor = Theme.TextSecondary,
-            Location  = new Point(10, 28),
-            Size      = new Size(cardW - 20, 14),
+            Location  = new Point(12, 35),
+            Size      = new Size(cardW - 24, 18),
             BackColor = Color.Transparent,
         };
 
-        // Mileage text
         string remaining = stats.RemainingMiles > 0
             ? $"{stats.TotalMiles:F1} / {shoe.MaxMileage:F0} {unit}  ·  {stats.RemainingMiles:F0} remaining"
             : $"{stats.TotalMiles:F1} {unit}  ·  LIMIT REACHED";
@@ -293,12 +292,11 @@ public partial class MainForm : Form
             Text      = remaining,
             Font      = Theme.FontSmall,
             ForeColor = veryNearEnd ? Theme.Negative : nearEnd ? Theme.Warning : Theme.TextPrimary,
-            Location  = new Point(10, 44),
-            Size      = new Size(cardW - 20, 14),
+            Location  = new Point(12, 55),
+            Size      = new Size(cardW - 24, 18),
             BackColor = Color.Transparent,
         };
 
-        // Last run
         string lastRunStr = stats.LastRunDate.HasValue
             ? $"Last run: {stats.LastRunDate.Value:MMM d}  ·  {stats.RunCount} runs  ·  avg {stats.AvgDistance:F1} {unit}"
             : "No runs logged yet";
@@ -307,12 +305,11 @@ public partial class MainForm : Form
             Text      = lastRunStr,
             Font      = Theme.FontSmall,
             ForeColor = Theme.TextSecondary,
-            Location  = new Point(10, 60),
-            Size      = new Size(cardW - 20, 14),
+            Location  = new Point(12, 75),
+            Size      = new Size(cardW - 24, 18),
             BackColor = Color.Transparent,
         };
 
-        // Projected retirement
         string projStr = stats.ProjectedRetirement.HasValue
             ? $"Projected retirement: {stats.ProjectedRetirement.Value:MMM d, yyyy}"
             : "";
@@ -321,25 +318,23 @@ public partial class MainForm : Form
             Text      = projStr,
             Font      = Theme.FontSmall,
             ForeColor = Theme.TextSecondary,
-            Location  = new Point(10, 74),
-            Size      = new Size(cardW - 20, 14),
+            Location  = new Point(12, 93),
+            Size      = new Size(cardW - 24, 18),
             BackColor = Color.Transparent,
         };
 
-        // Progress bar background
         var barBg = new Panel
         {
-            Location  = new Point(10, 91),
-            Size      = new Size(cardW - 20, 6),
+            Location  = new Point(12, 115),
+            Size      = new Size(cardW - 24, 8),
             BackColor = Theme.Border,
         };
 
-        // Progress bar fill (drawn panel)
-        int fillW = (int)Math.Min(cardW - 20, (cardW - 20) * stats.WornPercent / 100.0);
+        int fillW = (int)Math.Min(cardW - 24, (cardW - 24) * stats.WornPercent / 100.0);
         var barFill = new Panel
         {
             Location  = new Point(0, 0),
-            Size      = new Size(Math.Max(0, fillW), 6),
+            Size      = new Size(Math.Max(0, fillW), 8),
             BackColor = veryNearEnd ? Theme.Negative : nearEnd ? Theme.Warning : Theme.Positive,
         };
         barBg.Controls.Add(barFill);
@@ -366,9 +361,9 @@ public partial class MainForm : Form
             ForeColor = Theme.Accent,
             BackColor = Color.Transparent,
             FlatStyle = FlatStyle.Flat,
-            Height    = 28,
-            Width     = 110,
-            Margin    = new Padding(8, 8, 8, 4),
+            Height    = 35,
+            Width     = 138,
+            Margin    = new Padding(10, 10, 10, 5),
             TabStop   = false,
         };
         btnAdd.FlatAppearance.BorderColor = Theme.Accent;
@@ -397,7 +392,6 @@ public partial class MainForm : Form
         {
             if (c is FlowLayoutPanel fp)
             {
-                // find the scrollwrap, then find flpShoeList inside it
                 foreach (Control inner in fp.Controls)
                     if (inner is FlowLayoutPanel named && named.Name == "flpShoeList")
                     { flp = named; break; }
@@ -424,7 +418,7 @@ public partial class MainForm : Form
         }
         if (_data.Shoes.Count == 0)
         {
-            var hint = MakeBodyLabel("No shoes yet. Click + ADD SHOE above.", 404);
+            var hint = MakeBodyLabel("No shoes yet. Click + ADD SHOE above.", 505);
             hint.Margin = new Padding(8, 4, 8, 0);
             flp.Controls.Add(hint);
         }
@@ -434,15 +428,15 @@ public partial class MainForm : Form
 
     private Panel MakeShoeRow(Shoe shoe, string unit, int parentWidth)
     {
-        int rowW  = Math.Max(200, parentWidth - 16);
+        int rowW  = Math.Max(250, parentWidth - 16);
         var stats = _data.GetShoeStats(shoe);
 
         var row = new Panel
         {
             Width     = rowW,
-            Height    = 48,
+            Height    = 60,
             BackColor = Theme.Surface,
-            Margin    = new Padding(8, 0, 8, 4),
+            Margin    = new Padding(8, 0, 8, 5),
         };
 
         var lblName = new Label
@@ -450,8 +444,8 @@ public partial class MainForm : Form
             Text      = shoe.Name.Length > 0 ? shoe.Name : "(unnamed)",
             Font      = Theme.FontMonoBold,
             ForeColor = shoe.IsRetired ? Theme.TextSecondary : Theme.TextPrimary,
-            Location  = new Point(10, 8),
-            Size      = new Size(rowW - 160, 16),
+            Location  = new Point(12, 10),
+            Size      = new Size(rowW - 200, 20),
             BackColor = Color.Transparent,
         };
         var lblMiles = new Label
@@ -459,8 +453,8 @@ public partial class MainForm : Form
             Text      = $"{stats.TotalMiles:F1} / {shoe.MaxMileage:F0} {unit}  ({stats.WornPercent:F0}%)",
             Font      = Theme.FontSmall,
             ForeColor = stats.WornPercent >= 80 ? Theme.Warning : Theme.TextSecondary,
-            Location  = new Point(10, 26),
-            Size      = new Size(rowW - 160, 14),
+            Location  = new Point(12, 34),
+            Size      = new Size(rowW - 200, 18),
             BackColor = Color.Transparent,
         };
 
@@ -471,8 +465,8 @@ public partial class MainForm : Form
             ForeColor = Theme.TextSecondary,
             BackColor = Color.Transparent,
             FlatStyle = FlatStyle.Flat,
-            Location  = new Point(rowW - 140, 12),
-            Size      = new Size(44, 22),
+            Location  = new Point(rowW - 175, 15),
+            Size      = new Size(55, 28),
             TabStop   = false,
         };
         btnEdit.FlatAppearance.BorderSize  = 1;
@@ -486,8 +480,8 @@ public partial class MainForm : Form
             ForeColor = shoe.IsRetired ? Theme.Positive : Theme.Warning,
             BackColor = Color.Transparent,
             FlatStyle = FlatStyle.Flat,
-            Location  = new Point(rowW - 90, 12),
-            Size      = new Size(54, 22),
+            Location  = new Point(rowW - 113, 15),
+            Size      = new Size(68, 28),
             TabStop   = false,
         };
         btnRetire.FlatAppearance.BorderSize  = 1;
@@ -519,30 +513,29 @@ public partial class MainForm : Form
 
         var formCard = new Panel
         {
-            Width     = 404,
-            Height    = 320,
+            Width     = 505,
             BackColor = Theme.Surface,
             Margin    = new Padding(8, 0, 8, 12),
-            Padding   = new Padding(10),
+            Padding   = new Padding(12),
         };
 
-        int y = 10;
+        int y = 12;
 
-        // Date + Shoe (row)
-        formCard.Controls.Add(MakeFormLabel("Date", 10, y));
-        formCard.Controls.Add(MakeFormLabel("Shoe", 210, y));
+        // Date + Shoe
+        formCard.Controls.Add(MakeFormLabel("Date", 12, y));
+        formCard.Controls.Add(MakeFormLabel("Shoe", 262, y));
         _dtpRunDate = new DateTimePicker
         {
-            Location  = new Point(10, y + 16),
-            Size      = new Size(190, 22),
+            Location  = new Point(12, y + 20),
+            Size      = new Size(238, 28),
             Font      = Theme.FontLabel,
             Value     = DateTime.Today,
             Format    = DateTimePickerFormat.Short,
         };
         _cmbLogShoe = new ComboBox
         {
-            Location      = new Point(210, y + 16),
-            Size          = new Size(184, 22),
+            Location      = new Point(262, y + 20),
+            Size          = new Size(230, 28),
             Font          = Theme.FontLabel,
             FlatStyle     = FlatStyle.Flat,
             BackColor     = Theme.SurfaceHover,
@@ -550,25 +543,25 @@ public partial class MainForm : Form
             DropDownStyle = ComboBoxStyle.DropDownList,
         };
         formCard.Controls.AddRange([_dtpRunDate, _cmbLogShoe]);
-        y += 44;
+        y += 55;
 
         // Distance + Duration
-        formCard.Controls.Add(MakeFormLabel($"Distance ({_settings.Unit})", 10, y));
-        formCard.Controls.Add(MakeFormLabel("Duration (min, optional)", 210, y));
-        _txtDistance = MakeFormInput(10, y + 16, 190, "");
-        _txtDuration = MakeFormInput(210, y + 16, 184, "");
+        formCard.Controls.Add(MakeFormLabel($"Distance ({_settings.Unit})", 12, y));
+        formCard.Controls.Add(MakeFormLabel("Duration (min, optional)", 262, y));
+        _txtDistance = MakeFormInput(12, y + 20, 238, "");
+        _txtDuration = MakeFormInput(262, y + 20, 230, "");
         _txtDistance.PlaceholderText = "e.g. 5.2";
         _txtDuration.PlaceholderText = "e.g. 28";
         formCard.Controls.AddRange([_txtDistance, _txtDuration]);
-        y += 44;
+        y += 55;
 
         // Run Type + Surface
-        formCard.Controls.Add(MakeFormLabel("Run Type", 10, y));
-        formCard.Controls.Add(MakeFormLabel("Surface", 210, y));
+        formCard.Controls.Add(MakeFormLabel("Run Type", 12, y));
+        formCard.Controls.Add(MakeFormLabel("Surface", 262, y));
         _cmbRunType = new ComboBox
         {
-            Location      = new Point(10, y + 16),
-            Size          = new Size(190, 22),
+            Location      = new Point(12, y + 20),
+            Size          = new Size(238, 28),
             Font          = Theme.FontLabel,
             FlatStyle     = FlatStyle.Flat,
             BackColor     = Theme.SurfaceHover,
@@ -577,8 +570,8 @@ public partial class MainForm : Form
         };
         _cmbSurface = new ComboBox
         {
-            Location      = new Point(210, y + 16),
-            Size          = new Size(184, 22),
+            Location      = new Point(262, y + 20),
+            Size          = new Size(230, 28),
             Font          = Theme.FontLabel,
             FlatStyle     = FlatStyle.Flat,
             BackColor     = Theme.SurfaceHover,
@@ -590,14 +583,14 @@ public partial class MainForm : Form
         _cmbRunType.SelectedIndex = 0;
         _cmbSurface.SelectedIndex = 0;
         formCard.Controls.AddRange([_cmbRunType, _cmbSurface]);
-        y += 44;
+        y += 55;
 
         // Notes
-        formCard.Controls.Add(MakeFormLabel("Notes (optional)", 10, y));
-        _txtRunNotes = MakeFormInput(10, y + 16, 384, "");
+        formCard.Controls.Add(MakeFormLabel("Notes (optional)", 12, y));
+        _txtRunNotes = MakeFormInput(12, y + 20, 480, "");
         _txtRunNotes.PlaceholderText = "e.g. hilly 10k, felt strong";
         formCard.Controls.Add(_txtRunNotes);
-        y += 44;
+        y += 55;
 
         // Submit
         var btnLog = new Button
@@ -607,15 +600,15 @@ public partial class MainForm : Form
             BackColor = Theme.AccentDim,
             ForeColor = Theme.TextPrimary,
             FlatStyle = FlatStyle.Flat,
-            Location  = new Point(10, y),
-            Size      = new Size(384, 30),
+            Location  = new Point(12, y),
+            Size      = new Size(480, 38),
             TabStop   = false,
         };
         btnLog.FlatAppearance.BorderSize = 0;
         btnLog.Click += LogRun_Click;
         formCard.Controls.Add(btnLog);
 
-        formCard.Height = y + 48;
+        formCard.Height = y + 60;
         wrap.Controls.Add(formCard);
 
         wrap.Controls.Add(MakeSectionHeader("RECENT RUNS"));
@@ -665,18 +658,18 @@ public partial class MainForm : Form
 
             var row = new Panel
             {
-                Width     = _flpRecentRuns.Width > 0 ? _flpRecentRuns.Width - 16 : 388,
-                Height    = 32,
+                Width     = _flpRecentRuns.Width > 0 ? _flpRecentRuns.Width - 16 : 488,
+                Height    = 40,
                 BackColor = Theme.Surface,
-                Margin    = new Padding(8, 0, 8, 3),
+                Margin    = new Padding(8, 0, 8, 4),
             };
             var lbl = new Label
             {
                 Text      = line,
                 Font      = Theme.FontSmall,
                 ForeColor = Theme.TextPrimary,
-                Location  = new Point(10, 0),
-                Size      = new Size(row.Width - 50, 32),
+                Location  = new Point(12, 0),
+                Size      = new Size(row.Width - 62, 40),
                 TextAlign = ContentAlignment.MiddleLeft,
                 BackColor = Color.Transparent,
             };
@@ -687,8 +680,8 @@ public partial class MainForm : Form
                 ForeColor = Theme.TextSecondary,
                 BackColor = Color.Transparent,
                 FlatStyle = FlatStyle.Flat,
-                Location  = new Point(row.Width - 30, 6),
-                Size      = new Size(22, 20),
+                Location  = new Point(row.Width - 38, 8),
+                Size      = new Size(28, 25),
                 TabStop   = false,
             };
             btnDel.FlatAppearance.BorderSize = 0;
@@ -706,7 +699,7 @@ public partial class MainForm : Form
 
         if (recent.Count == 0)
         {
-            var hint = MakeBodyLabel("No runs logged yet.", 404);
+            var hint = MakeBodyLabel("No runs logged yet.", 505);
             hint.Margin = new Padding(8, 4, 8, 0);
             _flpRecentRuns.Controls.Add(hint);
         }
@@ -779,11 +772,10 @@ public partial class MainForm : Form
     {
         var wrap = MakeScrollWrap(panel);
 
-        // Filter row
         var filterRow = new Panel
         {
-            Width     = 404,
-            Height    = 38,
+            Width     = 505,
+            Height    = 48,
             BackColor = Color.Transparent,
             Margin    = new Padding(8, 8, 8, 0),
         };
@@ -792,14 +784,14 @@ public partial class MainForm : Form
             Text      = "Filter by shoe:",
             Font      = Theme.FontSmall,
             ForeColor = Theme.TextSecondary,
-            Location  = new Point(0, 10),
+            Location  = new Point(0, 12),
             AutoSize  = true,
             BackColor = Color.Transparent,
         };
         _cmbHistoryShoe = new ComboBox
         {
-            Location      = new Point(90, 6),
-            Size          = new Size(220, 22),
+            Location      = new Point(112, 8),
+            Size          = new Size(275, 28),
             Font          = Theme.FontLabel,
             FlatStyle     = FlatStyle.Flat,
             BackColor     = Theme.SurfaceHover,
@@ -829,7 +821,6 @@ public partial class MainForm : Form
         _updatingHistory = true;
         try
         {
-        // Rebuild shoe filter list
         var prevShoe = _cmbHistoryShoe.SelectedItem?.ToString();
         _cmbHistoryShoe.Items.Clear();
         _cmbHistoryShoe.Items.Add("All Shoes");
@@ -859,35 +850,35 @@ public partial class MainForm : Form
 
         if (runs.Count == 0)
         {
-            var hint = MakeBodyLabel("No runs found.", 404);
+            var hint = MakeBodyLabel("No runs found.", 505);
             hint.Margin = new Padding(8, 4, 8, 0);
             _flpHistory.Controls.Add(hint);
             _flpHistory.ResumeLayout(true);
             return;
-        } // end "no runs" early-return block
+        }
 
         // Header row
         var hdr = new Panel
         {
-            Width     = Math.Max(200, _flpHistory.Width - 16),
-            Height    = 22,
+            Width     = Math.Max(250, _flpHistory.Width - 16),
+            Height    = 28,
             BackColor = Color.Transparent,
-            Margin    = new Padding(8, 4, 8, 2),
+            Margin    = new Padding(10, 5, 10, 2),
         };
         void AddHdrLbl(string text, int x, int w) => hdr.Controls.Add(new Label
         {
             Text      = text,
             Font      = Theme.FontSmall,
             ForeColor = Theme.TextSecondary,
-            Location  = new Point(x, 2),
-            Size      = new Size(w, 18),
+            Location  = new Point(x, 3),
+            Size      = new Size(w, 22),
             BackColor = Color.Transparent,
         });
-        AddHdrLbl("DATE",     0,   60);
-        AddHdrLbl("SHOE",     62,  120);
-        AddHdrLbl("DIST",     184, 50);
-        AddHdrLbl("TYPE",     236, 65);
-        AddHdrLbl("PACE",     303, 70);
+        AddHdrLbl("DATE",  0,   75);
+        AddHdrLbl("SHOE",  78,  150);
+        AddHdrLbl("DIST",  230, 62);
+        AddHdrLbl("TYPE",  295, 82);
+        AddHdrLbl("PACE",  379, 88);
         _flpHistory.Controls.Add(hdr);
 
         foreach (var run in runs)
@@ -898,11 +889,11 @@ public partial class MainForm : Form
                 ? $"{run.DurationMinutes.Value / run.Distance:F1}m/{unit}"
                 : "—";
 
-            int rowW = Math.Max(200, _flpHistory.Width - 16);
+            int rowW = Math.Max(250, _flpHistory.Width - 16);
             var row = new Panel
             {
                 Width     = rowW,
-                Height    = run.Notes.Length > 0 ? 42 : 28,
+                Height    = run.Notes.Length > 0 ? 52 : 35,
                 BackColor = Theme.Surface,
                 Margin    = new Padding(8, 0, 8, 2),
             };
@@ -911,15 +902,15 @@ public partial class MainForm : Form
                 Text      = text,
                 Font      = Theme.FontSmall,
                 ForeColor = color,
-                Location  = new Point(x, 6),
-                Size      = new Size(w, 16),
+                Location  = new Point(x, 8),
+                Size      = new Size(w, 20),
                 BackColor = Color.Transparent,
             });
-            AddCell(run.Date.ToString("MMM d"),  0,   60,  Theme.TextPrimary);
-            AddCell(shoeName,                    62,  118, Theme.Accent);
-            AddCell($"{run.Distance:F1}",        184, 50,  Theme.TextPrimary);
-            AddCell(run.RunType.ToString(),      236, 65,  Theme.TextSecondary);
-            AddCell(pace,                        303, 70,  Theme.TextSecondary);
+            AddCell(run.Date.ToString("MMM d"),  0,   75,  Theme.TextPrimary);
+            AddCell(shoeName,                    78,  148, Theme.Accent);
+            AddCell($"{run.Distance:F1}",        230, 62,  Theme.TextPrimary);
+            AddCell(run.RunType.ToString(),      295, 82,  Theme.TextSecondary);
+            AddCell(pace,                        379, 88,  Theme.TextSecondary);
 
             if (run.Notes.Length > 0)
             {
@@ -928,8 +919,8 @@ public partial class MainForm : Form
                     Text      = run.Notes,
                     Font      = Theme.FontSmall,
                     ForeColor = Theme.TextSecondary,
-                    Location  = new Point(62, 22),
-                    Size      = new Size(rowW - 100, 14),
+                    Location  = new Point(78, 28),
+                    Size      = new Size(rowW - 118, 18),
                     BackColor = Color.Transparent,
                 });
             }
@@ -941,8 +932,8 @@ public partial class MainForm : Form
                 ForeColor = Theme.TextSecondary,
                 BackColor = Color.Transparent,
                 FlatStyle = FlatStyle.Flat,
-                Location  = new Point(rowW - 24, 4),
-                Size      = new Size(20, 20),
+                Location  = new Point(rowW - 30, 5),
+                Size      = new Size(25, 25),
                 TabStop   = false,
             };
             btnDel.FlatAppearance.BorderSize = 0;
@@ -959,7 +950,7 @@ public partial class MainForm : Form
         }
 
         _flpHistory.ResumeLayout(true);
-        } // end try
+        }
         finally { _updatingHistory = false; }
     }
 
@@ -971,7 +962,7 @@ public partial class MainForm : Form
         using var dlg = new Form
         {
             Text            = isEdit ? "Edit Shoe" : "Add Shoe",
-            ClientSize      = new Size(360, 310),
+            ClientSize      = new Size(450, 388),
             FormBorderStyle = FormBorderStyle.FixedDialog,
             StartPosition   = FormStartPosition.CenterParent,
             BackColor       = Theme.Surface,
@@ -979,7 +970,7 @@ public partial class MainForm : Form
             MinimizeBox     = false,
         };
 
-        int y = 14;
+        int y = 18;
         void AddLbl(string text, int x)
         {
             dlg.Controls.Add(new Label
@@ -999,44 +990,44 @@ public partial class MainForm : Form
             BackColor   = Theme.Background,
             ForeColor   = Theme.TextPrimary,
             BorderStyle = BorderStyle.FixedSingle,
-            Location    = new Point(x, y + 14),
-            Size        = new Size(w, 22),
+            Location    = new Point(x, y + 18),
+            Size        = new Size(w, 28),
         };
 
         // Name
-        AddLbl("Shoe Name *", 12);
-        var txtName = MakeTxt(12, 336, existing?.Name ?? "");
+        AddLbl("Shoe Name *", 15);
+        var txtName = MakeTxt(15, 420, existing?.Name ?? "");
         dlg.Controls.Add(txtName);
-        y += 42;
+        y += 52;
 
         // Brand + Model
-        AddLbl("Brand", 12);
-        AddLbl("Model", 190);
-        var txtBrand = MakeTxt(12, 170, existing?.Brand ?? "");
-        var txtModel = MakeTxt(190, 158, existing?.Model ?? "");
+        AddLbl("Brand", 15);
+        AddLbl("Model", 238);
+        var txtBrand = MakeTxt(15, 212, existing?.Brand ?? "");
+        var txtModel = MakeTxt(238, 198, existing?.Model ?? "");
         dlg.Controls.AddRange([txtBrand, txtModel]);
-        y += 42;
+        y += 52;
 
         // Max Mileage + Purchase Date
-        AddLbl($"Max Mileage ({_settings.Unit})", 12);
-        AddLbl("Purchase Date", 190);
-        var txtMaxMiles = MakeTxt(12, 170, existing?.MaxMileage.ToString("F0") ?? "400");
+        AddLbl($"Max Mileage ({_settings.Unit})", 15);
+        AddLbl("Purchase Date", 238);
+        var txtMaxMiles = MakeTxt(15, 212, existing?.MaxMileage.ToString("F0") ?? "400");
         var dtpPurchase = new DateTimePicker
         {
-            Location = new Point(190, y + 14),
-            Size     = new Size(158, 22),
+            Location = new Point(238, y + 18),
+            Size     = new Size(198, 28),
             Font     = Theme.FontLabel,
             Value    = existing?.PurchaseDate ?? DateTime.Today,
             Format   = DateTimePickerFormat.Short,
         };
         dlg.Controls.AddRange([txtMaxMiles, dtpPurchase]);
-        y += 42;
+        y += 52;
 
         // Notes
-        AddLbl("Notes (optional)", 12);
-        var txtNotes = MakeTxt(12, 336, existing?.Notes ?? "");
+        AddLbl("Notes (optional)", 15);
+        var txtNotes = MakeTxt(15, 420, existing?.Notes ?? "");
         dlg.Controls.Add(txtNotes);
-        y += 42;
+        y += 52;
 
         // Buttons
         var btnSave = new Button
@@ -1046,14 +1037,14 @@ public partial class MainForm : Form
             BackColor    = Theme.AccentDim,
             ForeColor    = Theme.TextPrimary,
             FlatStyle    = FlatStyle.Flat,
-            Location     = new Point(12, y + 10),
-            Size         = new Size(160, 28),
+            Location     = new Point(15, y + 12),
+            Size         = new Size(200, 35),
             DialogResult = DialogResult.OK,
         };
         btnSave.FlatAppearance.BorderSize = 0;
         dlg.Controls.Add(btnSave);
         dlg.AcceptButton = btnSave;
-        dlg.ClientSize   = new Size(360, y + 56);
+        dlg.ClientSize   = new Size(450, y + 70);
 
         if (dlg.ShowDialog(this) != DialogResult.OK) return;
 
@@ -1129,7 +1120,7 @@ public partial class MainForm : Form
         using var dlg = new Form
         {
             Text            = "Settings",
-            ClientSize      = new Size(280, 110),
+            ClientSize      = new Size(350, 210),
             FormBorderStyle = FormBorderStyle.FixedDialog,
             StartPosition   = FormStartPosition.CenterParent,
             BackColor       = Theme.Surface,
@@ -1137,20 +1128,20 @@ public partial class MainForm : Form
             MinimizeBox     = false,
         };
 
+        // Distance unit
         dlg.Controls.Add(new Label
         {
             Text      = "Distance Unit:",
             Font      = Theme.FontLabel,
             ForeColor = Theme.TextPrimary,
-            Location  = new Point(12, 16),
+            Location  = new Point(15, 20),
             AutoSize  = true,
             BackColor = Color.Transparent,
         });
-
         var cmbUnit = new ComboBox
         {
-            Location      = new Point(110, 12),
-            Size          = new Size(80, 22),
+            Location      = new Point(145, 16),
+            Size          = new Size(100, 28),
             Font          = Theme.FontLabel,
             BackColor     = Theme.Background,
             ForeColor     = Theme.TextPrimary,
@@ -1161,6 +1152,40 @@ public partial class MainForm : Form
         cmbUnit.SelectedItem = _settings.Unit;
         dlg.Controls.Add(cmbUnit);
 
+        // Theme
+        dlg.Controls.Add(new Label
+        {
+            Text      = "Theme:",
+            Font      = Theme.FontLabel,
+            ForeColor = Theme.TextPrimary,
+            Location  = new Point(15, 65),
+            AutoSize  = true,
+            BackColor = Color.Transparent,
+        });
+        var cmbTheme = new ComboBox
+        {
+            Location      = new Point(145, 61),
+            Size          = new Size(100, 28),
+            Font          = Theme.FontLabel,
+            BackColor     = Theme.Background,
+            ForeColor     = Theme.TextPrimary,
+            FlatStyle     = FlatStyle.Flat,
+            DropDownStyle = ComboBoxStyle.DropDownList,
+        };
+        cmbTheme.Items.AddRange(["dark", "light"]);
+        cmbTheme.SelectedItem = _settings.ThemeName;
+        dlg.Controls.Add(cmbTheme);
+
+        dlg.Controls.Add(new Label
+        {
+            Text      = "Theme change takes effect on next launch.",
+            Font      = Theme.FontSmall,
+            ForeColor = Theme.TextSecondary,
+            Location  = new Point(15, 98),
+            AutoSize  = true,
+            BackColor = Color.Transparent,
+        });
+
         var btnSave = new Button
         {
             Text         = "Save",
@@ -1168,8 +1193,8 @@ public partial class MainForm : Form
             BackColor    = Theme.AccentDim,
             ForeColor    = Theme.TextPrimary,
             FlatStyle    = FlatStyle.Flat,
-            Location     = new Point(12, 50),
-            Size         = new Size(120, 28),
+            Location     = new Point(15, 140),
+            Size         = new Size(150, 35),
             DialogResult = DialogResult.OK,
         };
         btnSave.FlatAppearance.BorderSize = 0;
@@ -1178,7 +1203,8 @@ public partial class MainForm : Form
 
         if (dlg.ShowDialog(this) == DialogResult.OK)
         {
-            _settings.Unit = cmbUnit.SelectedItem?.ToString() ?? "mi";
+            _settings.Unit      = cmbUnit.SelectedItem?.ToString()  ?? "mi";
+            _settings.ThemeName = cmbTheme.SelectedItem?.ToString() ?? "dark";
             _settings.Save();
             RefreshAll();
         }
@@ -1197,7 +1223,7 @@ public partial class MainForm : Form
 
     private void UpdateStatus()
     {
-        int active  = _data.Shoes.Count(s => !s.IsRetired);
+        int active   = _data.Shoes.Count(s => !s.IsRetired);
         int runCount = _data.Runs.Count;
         _lblStatus.Text = $"{active} active shoes  ·  {runCount} runs logged  ·  ShoeTracker v1.0";
     }
@@ -1231,8 +1257,8 @@ public partial class MainForm : Form
     {
         e.Graphics.Clear(Color.Transparent);
         using var pen = new Pen(Theme.Border, 1);
-        for (int i = 2; i < 12; i += 4)
-            e.Graphics.DrawLine(pen, i, 14, 14, i);
+        for (int i = 2; i < 16; i += 4)
+            e.Graphics.DrawLine(pen, i, 18, 18, i);
     }
 
     // ── UI Helpers ────────────────────────────────────────────────────────────
@@ -1262,11 +1288,11 @@ public partial class MainForm : Form
     private static (Panel card, Label[] vals) MakeCard(
         params (string label, string value, Color color)[] rows)
     {
-        const int rowH = 22;
-        const int padX = 10;
-        const int padY = 8;
+        const int rowH = 28;
+        const int padX = 12;
+        const int padY = 10;
         int totalH = rows.Length * rowH + padY * 2;
-        int cardW  = 404;
+        int cardW  = 505;
 
         var card = new Panel { Size = new Size(cardW, totalH), BackColor = Theme.Surface, Margin = new Padding(0) };
         var vals = new Label[rows.Length];
@@ -1308,15 +1334,15 @@ public partial class MainForm : Form
         Font      = Theme.FontSection,
         ForeColor = Theme.TextSecondary,
         AutoSize  = false,
-        Height    = 26,
-        Width     = 420,
+        Height    = 32,
+        Width     = 525,
         TextAlign = ContentAlignment.BottomLeft,
-        Padding   = new Padding(8, 0, 0, 2),
+        Padding   = new Padding(10, 0, 0, 2),
         BackColor = Color.Transparent,
-        Margin    = new Padding(0, 8, 0, 0),
+        Margin    = new Padding(0, 10, 0, 0),
     };
 
-    private static Label MakeBodyLabel(string text, int width = 404)
+    private static Label MakeBodyLabel(string text, int width = 505)
     {
         var size = TextRenderer.MeasureText(text, Theme.FontSmall,
             new Size(width - 16, 0), TextFormatFlags.WordBreak);
@@ -1345,7 +1371,7 @@ public partial class MainForm : Form
             ForeColor = Theme.TextSecondary,
             BackColor = Color.Transparent,
             FlatStyle = FlatStyle.Flat,
-            Size      = new Size(32, 40),
+            Size      = new Size(40, 50),
             TabStop   = false,
         };
         btn.FlatAppearance.BorderSize           = 0;
@@ -1378,7 +1404,7 @@ public partial class MainForm : Form
         ForeColor   = Theme.TextPrimary,
         BorderStyle = BorderStyle.FixedSingle,
         Location    = new Point(x, y),
-        Size        = new Size(width, 22),
+        Size        = new Size(width, 28),
     };
 }
 

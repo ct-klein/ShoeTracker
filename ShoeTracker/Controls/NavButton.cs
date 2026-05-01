@@ -23,8 +23,8 @@ public sealed class NavButton : Button
         Text      = tabName;
         Font      = Theme.FontNav;
         AutoSize  = false;
-        Height    = 32;
-        Width     = TextRenderer.MeasureText(tabName, Font).Width + 24;
+        Height    = 40;
+        Width     = TextRenderer.MeasureText(tabName, Font).Width + 30;
         FlatStyle = FlatStyle.Flat;
         BackColor = Color.Transparent;
         ForeColor = Theme.TextSecondary;
